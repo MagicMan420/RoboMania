@@ -1,0 +1,516 @@
+//INFRARED CONTROLLED ROBOT WITH SPECIALTY LIGHTING AND ABILITY TO PLAY PREPRGRAMMED PIEZO MUSIC AT THE TOUCH OF A BUTTON.
+//The remote control I used for this project was an application downloaded to my android phone that could be used
+//as a universal IR remote. I used the IRRecvDemo sketch included in the arduino IDE to gain access to the protocol codes
+//of a sharp television remote I selected for my phone to mimic. I've run into bumps in the road somewhere when I tried adding
+//the super mario them melody and led lighting. The parts of this sketch regarding movement of the robot work and have been tested
+//however as it is this sketch will not compile until I finish the coding. I'm always open to suggestions or help if you spot
+//simple issues that I overlooked. I hope this helps you with your project and feel free to use this as it is under a general
+//license for public use. If you have specific questions feel free to email me at TheAmazingDavidB@gmail.com
+
+
+
+#include <IRremote.h>
+
+int RECV_PIN = 6;
+IRrecv irrecv(RECV_PIN);
+decode_results results;
+
+//Hex code assignements - These were for my specific remote control. Yours will most likely be different.
+const long go_Forward = 0xE0E006F9;
+const long go_Backward = 0xE0E08679;
+const long go_Left = 0xE0E0A659;
+const long go_Right = 0xE0E046B9;
+const long go_Stop = 0xE0E016E9;
+int on_blue = 0xE0E06897;
+int off_blue = 0xE0E028D7;
+int on_yellow = 0xE0E0A857;
+int off_yellow = 0xE0E036C9;
+int play_mario_melody = 0xE0E020DF;
+int play_underworld_melody = 0xE0E0A05F;
+int on_led_brights = 0xE0E0609F;
+int off_led_brights = 0xE0E010CF;
+
+
+
+//--- Declared variables for preprogrammed piezo music
+
+#define NOTE_B0  31
+#define NOTE_C1  33
+#define NOTE_CS1 35
+#define NOTE_D1  37
+#define NOTE_DS1 39
+#define NOTE_E1  41
+#define NOTE_F1  44
+#define NOTE_FS1 46
+#define NOTE_G1  49
+#define NOTE_GS1 52
+#define NOTE_A1  55
+#define NOTE_AS1 58
+#define NOTE_B1  62
+#define NOTE_C2  65
+#define NOTE_CS2 69
+#define NOTE_D2  73
+#define NOTE_DS2 78
+#define NOTE_E2  82
+#define NOTE_F2  87
+#define NOTE_FS2 93
+#define NOTE_G2  98
+#define NOTE_GS2 104
+#define NOTE_A2  110
+#define NOTE_AS2 117
+#define NOTE_B2  123
+#define NOTE_C3  131
+#define NOTE_CS3 139
+#define NOTE_D3  147
+#define NOTE_DS3 156
+#define NOTE_E3  165
+#define NOTE_F3  175
+#define NOTE_FS3 185
+#define NOTE_G3  196
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_AS3 233
+#define NOTE_B3  247
+#define NOTE_C4  262
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_DS4 311
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_FS4 370
+#define NOTE_G4  392
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_AS4 466
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_DS5 622
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_FS5 740
+#define NOTE_G5  784
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define NOTE_AS5 932
+#define NOTE_B5  988
+#define NOTE_C6  1047
+#define NOTE_CS6 1109
+#define NOTE_D6  1175
+#define NOTE_DS6 1245
+#define NOTE_E6  1319
+#define NOTE_F6  1397
+#define NOTE_FS6 1480
+#define NOTE_G6  1568
+#define NOTE_GS6 1661
+#define NOTE_A6  1760
+#define NOTE_AS6 1865
+#define NOTE_B6  1976
+#define NOTE_C7  2093
+#define NOTE_CS7 2217
+#define NOTE_D7  2349
+#define NOTE_DS7 2489
+#define NOTE_E7  2637
+#define NOTE_F7  2794
+#define NOTE_FS7 2960
+#define NOTE_G7  3136
+#define NOTE_GS7 3322
+#define NOTE_A7  3520
+#define NOTE_AS7 3729
+#define NOTE_B7  3951
+#define NOTE_C8  4186
+#define NOTE_CS8 4435
+#define NOTE_D8  4699
+#define NOTE_DS8 4978
+ 
+ //Set up the control pin. Does not have to be 3.
+#define melodyPin 3
+
+
+//Mario main theme melody note schedule
+int melody[] = {
+  NOTE_E7, NOTE_E7, 0, NOTE_E7,
+  0, NOTE_C7, NOTE_E7, 0,
+  NOTE_G7, 0, 0,  0,
+  NOTE_G6, 0, 0, 0,
+ 
+  NOTE_C7, 0, 0, NOTE_G6,
+  0, 0, NOTE_E6, 0,
+  0, NOTE_A6, 0, NOTE_B6,
+  0, NOTE_AS6, NOTE_A6, 0,
+ 
+  NOTE_G6, NOTE_E7, NOTE_G7,
+  NOTE_A7, 0, NOTE_F7, NOTE_G7,
+  0, NOTE_E7, 0, NOTE_C7,
+  NOTE_D7, NOTE_B6, 0, 0,
+ 
+  NOTE_C7, 0, 0, NOTE_G6,
+  0, 0, NOTE_E6, 0,
+  0, NOTE_A6, 0, NOTE_B6,
+  0, NOTE_AS6, NOTE_A6, 0,
+ 
+  NOTE_G6, NOTE_E7, NOTE_G7,
+  NOTE_A7, 0, NOTE_F7, NOTE_G7,
+  0, NOTE_E7, 0, NOTE_C7,
+  NOTE_D7, NOTE_B6, 0, 0
+};
+//Mario main them tempo set up
+int tempo[] = {
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  9, 9, 9,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  9, 9, 9,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+};
+//Underworld melody note schedule
+int underworld_melody[] = {
+  NOTE_C4, NOTE_C5, NOTE_A3, NOTE_A4,
+  NOTE_AS3, NOTE_AS4, 0,
+  0,
+  NOTE_C4, NOTE_C5, NOTE_A3, NOTE_A4,
+  NOTE_AS3, NOTE_AS4, 0,
+  0,
+  NOTE_F3, NOTE_F4, NOTE_D3, NOTE_D4,
+  NOTE_DS3, NOTE_DS4, 0,
+  0,
+  NOTE_F3, NOTE_F4, NOTE_D3, NOTE_D4,
+  NOTE_DS3, NOTE_DS4, 0,
+  0, NOTE_DS4, NOTE_CS4, NOTE_D4,
+  NOTE_CS4, NOTE_DS4,
+  NOTE_DS4, NOTE_GS3,
+  NOTE_G3, NOTE_CS4,
+  NOTE_C4, NOTE_FS4, NOTE_F4, NOTE_E3, NOTE_AS4, NOTE_A4,
+  NOTE_GS4, NOTE_DS4, NOTE_B3,
+  NOTE_AS3, NOTE_A3, NOTE_GS3,
+  0, 0, 0
+};
+//Underwolrd tempo setup
+int underworld_tempo[] = {
+  12, 12, 12, 12,
+  12, 12, 6,
+  3,
+  12, 12, 12, 12,
+  12, 12, 6,
+  3,
+  12, 12, 12, 12,
+  12, 12, 6,
+  3,
+  12, 12, 12, 12,
+  12, 12, 6,
+  6, 18, 18, 18,
+  6, 6,
+  6, 6,
+  6, 6,
+  18, 18, 18, 18, 18, 18,
+  10, 10, 10,
+  10, 10, 10,
+  3, 3, 3
+};
+//This section sets up your motors. I used individual motors on the front of the robot similar to a tank.
+int leftmotorForward = 8; // pin 8 --- left motor (+) green wire
+
+int leftmotorBackward = 11; // pin 11 --- left motor (-) black wire
+
+int leftmotorspeed = 9; // pin 9 --- left motor speed signal
+
+int rightmotorForward = 12; // pin 12 --- right motor (+) green wire
+
+int rightmotorBackward = 13; // pin 13 --- right motor (-) black
+
+int rightmotorspeed = 10; // pin 10 --- right motor speed signal
+
+//Next we'll set up the LED's
+int led_yellow = 7;
+
+int led_blue = 4;
+//Here we set up the piezo speaker for our tunes.
+int piezo_buzzer = 3;
+//More lighting that was a bit of an afterthought
+int led_brights = 2;
+
+//---Motor Speeds and Timers
+
+
+int Slow = 150; // slow speed (of 255 max)
+
+int Fast = 255; // fast speed (of 255 max)
+
+//------------------------------------------------------
+
+void setup() //---6 Pins being used are outputs---
+{
+  Serial.begin(9600);
+  irrecv.enableIRIn();
+
+
+  pinMode(leftmotorForward, OUTPUT);
+
+  pinMode(leftmotorBackward, OUTPUT);
+
+  pinMode(leftmotorspeed, OUTPUT);
+
+  pinMode(rightmotorForward, OUTPUT);
+
+  pinMode(rightmotorBackward, OUTPUT);
+
+  pinMode(rightmotorspeed, OUTPUT);
+//pin setup for the led system
+  pinMode(led_yellow, OUTPUT);
+
+  pinMode(led_blue, OUTPUT);
+  //Peizo setup
+  pinMode(piezo_buzzer, OUTPUT);
+  
+  pinMode(led_brights, OUTPUT);
+}
+
+// ---Main Program Loop -----------------------------
+
+void loop()
+
+{
+//here I setup the arduino to read and decode the IR protocol created by my remote.
+  if (irrecv.decode(&results)) {
+    Serial.println(results.value, HEX);
+
+    long int key = results.value;
+    switch (key)
+   //Next I used a "case" setup since there were multiple variables possible. So the arduino resopnds to whatever case
+   //or IR protocol number is created by my remote. I wasn't able to test it to see if by triggering the lighting it would 
+   //kill the function it was carrying out to accomodate for the new command or if they will run concurrently. If anyone has \
+   //suggetions as to a better method to handle this feel free to make suggestions. 
+    {
+    case go_Forward:
+      goForward();
+      break;
+    case go_Backward:
+      goBackward();
+      break;
+    case go_Stop:
+      Stop();
+      break;
+    case go_Right:
+      goRight();
+      break;
+    case go_Left:
+      goLeft();
+      break;
+      //Here is where I set up the lighting
+    case on_yellow:
+      on_led_yellow();
+      break;
+    case off_yellow:
+      off_led_yellow();
+      break;
+    case on_blue:
+      on_led_blue();
+      break;
+    case off_blue:
+      off_led_blue();
+      break;
+      //Here is set up the music for the super mario theme
+    case play_mario_melody:
+      play_mario();
+      break;
+    case play_underworld_melody:
+      play_underworld();
+      break;
+      
+//Here I set up the command to continue to receive incoming codes
+    }
+    irrecv.resume();
+  }
+}
+
+//----- Here I included the "Sub-routine" Voids called out by the main loop
+//this section of the sketch is where I believe the sketch has gone FUBAR. I'll work on it over the weekend to see if I can 
+//get it to work and update this sketch.
+
+void goForward()
+
+{
+
+  analogWrite(leftmotorspeed,Fast); //Enable left motor by setting speed
+
+  analogWrite(rightmotorspeed,Fast); //Enable left motor by setting speed
+
+  digitalWrite(leftmotorBackward,LOW); // Drives LOW outputs down first to avoid damage
+
+  digitalWrite(rightmotorBackward,LOW);
+
+  digitalWrite(leftmotorForward,HIGH);
+
+  digitalWrite(rightmotorForward,HIGH);
+
+
+
+}
+
+void goBackward()
+
+{
+
+  analogWrite(leftmotorspeed,Slow);
+
+  analogWrite(rightmotorspeed,Slow);
+
+  digitalWrite(leftmotorForward,LOW);
+
+  digitalWrite(rightmotorForward,LOW);
+
+  digitalWrite(leftmotorBackward,HIGH);
+
+  digitalWrite(rightmotorBackward,HIGH);
+
+}
+
+void Stop() // Sets speed pins to LOW disabling both motors
+
+{
+
+  digitalWrite(leftmotorspeed,LOW);
+
+  digitalWrite(rightmotorspeed,LOW);
+
+}
+
+void goLeft()
+{
+  analogWrite(rightmotorspeed,Slow);
+  analogWrite(leftmotorspeed,Fast);
+  digitalWrite(leftmotorForward,HIGH);
+  digitalWrite(rightmotorForward,HIGH);
+  digitalWrite(leftmotorBackward,LOW);
+  digitalWrite(rightmotorBackward,LOW);
+}
+
+void goRight()
+{
+  analogWrite(rightmotorspeed,Fast);
+  analogWrite(leftmotorspeed,Slow);
+  digitalWrite(leftmotorForward,HIGH);
+  digitalWrite(rightmotorForward,HIGH);
+  digitalWrite(leftmotorBackward,LOW);
+  digitalWrite(rightmotorBackward,LOW);
+}
+
+void off_led_yellow()
+{
+  digitalWrite(led_yellow, LOW);
+}
+
+void on_led_yellow()
+{
+  digitalWrite(led_yellow, HIGH);
+}
+
+void off_led_blue()
+{
+  digitalWrite(led_blue, LOW);
+}
+
+void on_led_blue()
+{
+  digitalWrite(led_blue; HIGH);
+}
+
+void on_brights()
+{
+digitalWrite(led_brights, HIGH);
+}
+
+void off_brights()
+{
+digitalWrite(led_brights, LOW);
+}
+
+
+int song = 0;
+ 
+void sing(int s) {
+  // iterate over the notes of the melody:
+  song = s;
+  if (song == 2) {
+    
+void play_underworld() 
+  // iterate over the notes of the melody:
+    Serial.println(" 'Underworld Theme'");
+    for (int thisNote = 0; thisNote < size; thisNote++) {
+ 
+      // to calculate the note duration, take one second
+      // divided by the note type.
+      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+      int noteDuration = 1000 / underworld_tempo[thisNote];
+ 
+      buzz(melodyPin, underworld_melody[thisNote], noteDuration);
+ 
+      // to distinguish the notes, set a minimum time between them.
+      // the note's duration + 30% seems to work well:
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+ 
+      // stop the tone playing:
+      buzz(melodyPin, 0, noteDuration);
+ 
+    }
+    
+    void play_mario()
+    Serial.println(" 'Mario Theme'");
+    int size = sizeof(melody) / sizeof(int);
+    for (int thisNote = 0; thisNote < size; thisNote++) {
+ 
+      // to calculate the note duration, take one second
+      // divided by the note type.
+      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+      int noteDuration = 1000 / tempo[thisNote];
+ 
+      buzz(melodyPin, melody[thisNote], noteDuration);
+ 
+      // to distinguish the notes, set a minimum time between them.
+      // the note's duration + 30% seems to work well:
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+ 
+      // stop the tone playing:
+      buzz(melodyPin, 0, noteDuration);
+    }
+    
+    void buzz
+    {
+    (int targetPin, long frequency, long length) 
+  digitalWrite(13, HIGH);
+  long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
+  //// 1 second's worth of microseconds, divided by the frequency, then split in half since
+  //// there are two phases to each cycle
+  long numCycles = frequency * length / 1000; // calculate the number of cycles for proper timing
+  //// multiply frequency, which is really cycles per second, by the number of seconds to
+  //// get the total number of cycles to produce
+  for (long i = 0; i < numCycles; i++) { // for the calculated length of time...
+    digitalWrite(targetPin, HIGH); // write the buzzer pin high to push out the diaphram
+    delayMicroseconds(delayValue); // wait for the calculated delay value
+    digitalWrite(targetPin, LOW); // write the buzzer pin low to pull back the diaphram
+    delayMicroseconds(delayValue); // wait again or the calculated delay value
+  }
+    }
+    }
+     
